@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -129,6 +130,7 @@ type jsonMessage struct {
 	DumpKind string    `json:"dump_kind"`
 	Dump     string    `json:"dump"`
 	Time     time.Time `json:"time"`
+	Rand     string    `json:"rand"`
 }
 
 func writeDumpPlainText(data []byte, _ eventType) error {
@@ -137,15 +139,30 @@ func writeDumpPlainText(data []byte, _ eventType) error {
 }
 
 func writeDumpJSON(data []byte, t eventType) error {
+	randStr, err := getRandStr()
+	if err != nil {
+		return err
+	}
+
 	m := jsonMessage{
 		Msg:      t.String(),
 		DumpKind: t.String(),
 		Dump:     string(data),
 		Time:     time.Now().UTC(),
+		Rand:     randStr,
 	}
 
 	enc := json.NewEncoder(os.Stdout)
 	return enc.Encode(&m)
+}
+
+func getRandStr() (string, error) {
+	r := make([]byte, 3)
+	_, err := rand.Read(r)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%X", r), err
 }
 
 var writeDump = writeDumpPlainText
